@@ -1,14 +1,18 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <stdbool.h>
+#include <time.h>
 
-#define FILES 25
+
+#define FILES 50
 
 int main(int argc, char const *argv[]) {
    char *extension = ".txt";
    char *type = "asphalt_";
    char fileName[strlen(type)+strlen(extension)+3];
    int number[FILES];
+   bool repeat = false;
 
    srand(time(NULL));
 
