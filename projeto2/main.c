@@ -7,8 +7,8 @@
 
 
 #define FILES 50
-
-int *read_image_file(char* fileName);
+int ** read_image_file(char* fileName, int *line, int *colum);
+void print(int ** matriz, int line, int colum);
 
 int main(int argc, char const *argv[]) {
    char *extension = ".txt";
@@ -20,7 +20,13 @@ int main(int argc, char const *argv[]) {
    FILE *file;
    long size;
    srand(time(NULL));
-   int *matriz;
+   int ** asphalt[FILES];
+   int ** grass[FILES];
+   int asphalt_line[FILES];
+   int asphalt_colum[FILES];
+   int grass_line[FILES];
+   int grass_colum[FILES];
+
 
    for (size_t i = 0; i < FILES; i++) {
      do{
@@ -33,7 +39,9 @@ int main(int argc, char const *argv[]) {
      }while(random[i] == 0);
 
      snprintf( fileName, sizeof( fileName ), "%s%.2d%s", type, random[i], extension );
-     printf("%s ",fileName);
+
+     asphalt[i] = read_image_file(fileName, &asphalt_line[i], &asphalt_colum[i]);
+
    }
 
    printf("\n");
@@ -49,20 +57,11 @@ int main(int argc, char const *argv[]) {
      }while(random[i] == 0);
 
      snprintf( fileName, sizeof( fileName ), "%s%.2d%s", type2, random[i], extension );
-     printf("%s ",fileName);
+     grass[i] = read_image_file(fileName, &grass_line[i], &grass_colum[i]);
+
    }
+   printf("%d linhas\n%d colunas\n%d valor do primeiro arquivo\n", asphalt_line[0], asphalt_colum[0], asphalt[0][0][0]);
 
-  file = fopen(fileName, "r");
-
-  if (file != NULL) {
-    fseek(file, 0, SEEK_END);
-    size = ftell(file);
-    printf("O arquivo %s possui %ld bytes", fileName, size/sizeof(int));
-  }else{
-    printf("Arquivo inexistente");
-  }
-
-  matriz = read_image_file(fileName);
 
   return 0;
 }
@@ -70,10 +69,10 @@ int main(int argc, char const *argv[]) {
 //=============FUNCTIONS=============
 
 
-int *read_image_file(char* fileName) {
+int ** read_image_file(char* fileName, int *line, int *colum) {
 	FILE* file = fopen(fileName, "r");
-  int line = 0, colum = 0;
 
+  *colum = 1;
 	if (file == NULL) {
 		printf("Cannot open file: %s", fileName);
 	}
@@ -87,31 +86,33 @@ int *read_image_file(char* fileName) {
 			count = fgetc(file);
 
 			if (!final_colum && count == ';')
-				colum++;
+        (*colum)++;
 
 			if (count == '\n') {
-				line++;
+				(*line)++;
 				final_colum = true;
 			}
 		}
 
-      printf("\nIMG:\nLin: %d\nCol: %d\n", line, colum);
 
 
 	rewind(file);
 
-	int* matriz = calloc(line*colum, sizeof(int));
+	int ** matriz = (int **) malloc(*line* sizeof(int *));
+
+  for(int i = 0; i < (*line); i++){
+    matriz[i] = (int*)malloc((*colum)*sizeof(int));
+  }
 
 
-	for (int i = 0; i < line; i++) {
-		for (int j = 0; j < colum; j++) {
-			fscanf(file, "%d;", matriz + (i*colum) + j);
-      printf("%d\n", *(matriz + (i*colum) + j));
+	for (int i = 0; i < *line; i++) {
+		for (int j = 0; j < *colum; j++) {
+			fscanf(file, "%d;", &matriz[i][j]);
 		}
 	}
 
 	fclose(file);
-  printf("%s\n", fileName );
-  
-	return matriz;
+  printf("%s\n", fileName);
+  return matriz;
+
 }
