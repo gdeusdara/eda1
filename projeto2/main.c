@@ -16,6 +16,7 @@ int* func_ILBP(int **, int, int);
 double* get_glcm_for_direction(int direction[2], int ** matriz, int line, int col);
 double* func_GLCM(int ** matriz, int line, int col);
 double * training(double ** training_descriptor);
+double testing(double* asphalt_trained, double* grass_trained, double** descriptor_type, int is_grass);
 
 int main(int argc, char const *argv[]) {
    char *type = "./DataSet/asphalt/asphalt_";
@@ -24,6 +25,7 @@ int main(int argc, char const *argv[]) {
    double ** grass_descriptor;
    double * asphalt_training;
    double * grass_training;
+   double hits;
 
    srand(time(NULL));
 
@@ -32,6 +34,15 @@ int main(int argc, char const *argv[]) {
 
    asphalt_training = training(asphalt_descriptor);
    grass_training = training(grass_descriptor);
+
+   hits = testing(asphalt_training, grass_training, asphalt_descriptor, 0);
+   hits += testing(asphalt_training, grass_training, grass_descriptor, 1);
+
+   hits = (hits * 100)/50.0;
+
+   printf("Acertos: %.0lf%%\n", hits);
+
+
 
   return 0;
 }
@@ -111,7 +122,7 @@ int* func_ILBP(int** matriz, int line, int colum) {
       secundary_matriz[2][0] = matriz[i+1][j-1];
       secundary_matriz[2][1] = matriz[i+1][j];
       secundary_matriz[2][2] = matriz[i+1][j+1];
-			// calculate the average value of the sub-matrix
+
 			avarage = 0;
 			for (int x = 0; x < 3; x++) {
 				for (int y = 0; y < 3; y++) {
@@ -121,21 +132,16 @@ int* func_ILBP(int** matriz, int line, int colum) {
 
 			avarage = avarage / 9;
 
-			// find the lowest value in binary
+			binary = 0;
 
-			// a unsigned short has 16 bits (2 bytes)
-			binary = 0; //0000 0000 0000 0000
-
-									// find the initial value before shifts to determine lowest
-									// loop should do the following path: x,y -> 0,0 -> 0,1 -> 0,2 -> 1,2 -> 2,2 -> 2,1 -> 2,0 -> 1,0 -> 1,1
 			x = 0;
       y = 0;
 			while (true) {
-				binary = binary << 1; // shift binary to the left by 1 bit
+				binary = binary << 1;
 
 				if (secundary_matriz[x][y] >= avarage) {
-					binary = binary | 0x0001; // bitwise OR with 0000 0000 0000 0001 (to insert a 1 on the end)
-				} // there is no need to insert a 0
+					binary = binary | 0x0001;
+				}
 
 
 				if (x == 1 && y == 1) {
@@ -164,22 +170,17 @@ int* func_ILBP(int** matriz, int line, int colum) {
 				}
 			}
 
-			// now we have the bit representing the current value
-			// we want to make it rotation safe, to do it we will shift the binary
-			// and find the lowest value
-
-			// unsigned short (unsigned, 16bits) to int (signed, 32bits) preserves value
-			lowest_binary_num =  (int) binary; // initialize with binary
+			lowest_binary_num =  (int) binary;
 
 			for (int k = 0; k < 9; k++) {
 
-				extracted = binary & 0x0100; // 0x0010 = 0000 0001 0000 0000
-				extracted = extracted >> 8; // shift by 8 => 0000 000X 0000 0000 >> 0000 0000 0000 000X
+				extracted = binary & 0x0100;
+				extracted = extracted >> 8;
 
-				binary = binary << 1; // shift binary to left by 1 bit
+				binary = binary << 1;
 
-				binary = binary | extracted; // insert the extracted bit on the end on binary
-				binary = binary & 0x01FF; // clean the unused part, 0x01FF = 0000 0001 1111 1111
+				binary = binary | extracted;
+				binary = binary & 0x01FF;
 
 				if (binary < lowest_binary_num)
 					lowest_binary_num = (int) binary;
@@ -295,7 +296,7 @@ double ** images_process(char * type, double ** descriptor){
     ilbp[i] = func_ILBP(matrix[i], matrix_line[i], matrix_colum[i]);
     glcm[i] = func_GLCM(matrix[i], matrix_line[i], matrix_colum[i]);
 
-    descriptor[i] = calloc((ILBP_MAX  + METRICS), sizeof(double)); // concatenate ilbp and glcm
+    descriptor[i] = calloc((ILBP_MAX  + METRICS), sizeof(double));
 
 		for (int j = 0; j < (ILBP_MAX + 24); j++) {
 
@@ -335,10 +336,39 @@ double * training(double ** training_descriptor){
       for(int j = 0; j < FILES/2; j++){
           vector[i] += training_descriptor[j][i];
       }
-      printf("%lf\n", vector[i]);
-
       vector[i] /= FILES/2;
   }
 
   return vector;
+}
+
+double testing(double* asphalt_trained, double* grass_trained, double** descriptor_type, int is_grass){
+
+    double distance_from_asphalt = 0;
+    double distance_from_grass = 0;
+    double hits = 0;
+    double aux = 0;
+    for(int i = 0; i < 25; i++){
+
+        distance_from_grass = 0;
+        distance_from_asphalt = 0;
+
+        for(int j = 0; j < ILBP_MAX  + METRICS; j++){
+            distance_from_asphalt  += pow(asphalt_trained[i] - descriptor_type[i+25][j], 2); //taking the last 25
+            distance_from_grass  += pow(grass_trained[i] - descriptor_type[i+25][j], 2);
+        }
+
+        distance_from_asphalt = sqrt(distance_from_asphalt);
+        distance_from_grass = sqrt(distance_from_grass);
+
+        int test_result = (distance_from_grass < distance_from_asphalt) ? 1 : 0;
+
+        if(test_result == is_grass){
+          hits++;
+        }else{
+          aux++;
+        }
+    }
+    is_grass ? printf("Falso negativo: %.0lf%%\n", aux) : printf("Falso positivo: %.0lf%%\n", aux);
+    return hits;
 }
