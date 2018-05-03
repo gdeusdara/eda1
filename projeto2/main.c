@@ -40,11 +40,14 @@ int main(int argc, char const *argv[]) {
 
    hits = (hits * 100)/50.0;
 
+   free(asphalt_descriptor);
+   free(grass_descriptor);
+   free(asphalt_training);
+   free(grass_training);
    printf("Acertos: %.0lf%%\n", hits);
 
 
-
-  return 0;
+   return 0;
 }
 
 //=============FUNCTIONS=============
@@ -369,6 +372,6 @@ double testing(double* asphalt_trained, double* grass_trained, double** descript
           aux++;
         }
     }
-    is_grass ? printf("Falso negativo: %.0lf%%\n", aux) : printf("Falso positivo: %.0lf%%\n", aux);
+    is_grass ? printf("Falso negativo: %.0lf%%\n", aux) : printf("Falso positivo: %.0lf%%\n", (aux * 100)/50);
     return hits;
 }
