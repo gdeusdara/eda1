@@ -97,9 +97,6 @@ void new_register(List *list)
 
     init_element(new, new_register);
     printf("%s\n", new->info.name );
-    file = fopen(FILE_NAME, "a");
-    if (file == NULL)
-        exit(1);
 
     if(list->next == NULL)
     {
@@ -123,6 +120,7 @@ void new_register(List *list)
                 {
                     new->previous = element->previous;
                     new->next = element;
+                    element->previous->next = new;
                     element->previous = new;
                 }
                 finish = true;
@@ -141,9 +139,18 @@ void new_register(List *list)
     }
     printf("AGORA VOU GRAVAR NO ARQUIVO\n");
 
+    file = fopen(FILE_NAME, "w");
+    if (file == NULL)
+    exit(1);
 
-    if(!fprintf(file, "%s\n%s\n%s\n%d\n%s\n$\n", new_register.name, new_register.tel, new_register.adress, new_register.cep, new_register.birthday))
-      printf("Erro ao gravar no arquivo\n");
+    List *element = list->next;
+    while (element != NULL)
+    {
+        if(!fprintf(file, "%s\n%s\n%s\n%d\n%s\n$\n", element->info.name, element->info.tel, element->info.adress, element->info.cep, element->info.birthday))
+            printf("Erro ao gravar no arquivo\n");
+        element = element->next;
+    }
+
     if(fclose(file))
       printf("Erro ao fechar Arquivo\n");
 }
