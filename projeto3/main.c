@@ -1,4 +1,5 @@
 #include <stdio.h>
+#include <ctype.h>
 #include <stdlib.h>
 #include <string.h>
 #include <stdbool.h>
@@ -77,6 +78,7 @@ void new_register(List *list)
     printf ("Digite o nome: ");
     scanf("%[^\n]%*c", new_register.name);
 
+
     new_register.tel = (char *) malloc(sizeof(char *));
     printf("Digite o telefone: ");
     scanf("%[^\n]%*c", new_register.tel);
@@ -110,29 +112,30 @@ void new_register(List *list)
         bool finish = false;
         do
         {
-            if(strcmp(new->info.name, element->info.name) < 0)
+            if(strcasecmp(new->info.name, element->info.name) < 0)
             {
-                List *previous = list->next;
-                do {
-                  /* code */
-                if (previous == element) {
-                  printf("Estou no primeiro elemento\n");
-                  list->next = new;
-                  new->next = element;
-                  element->previous = new;
-                  finish = true;
+                if (list->next == element)
+                {
+                    list->next = new;
+                    new->next = element;
+                    element->previous = new;
+                } else
+                {
+                    new->previous = element->previous;
+                    new->next = element;
+                    element->previous = new;
                 }
-                previous = previous->next;
-              } while(!finish);
-
+                finish = true;
             }
-            else if (element->next == NULL) {
-                printf("Estou no segundo if\n");
+            else if (element->next == NULL)
+            {
                 element->next = new;
                 new->previous = element;
                 finish = true;
             }
-            element = element->next;
+            if (!finish) {
+              element = element->next;
+            }
         } while (!finish || element == NULL);
 
     }
