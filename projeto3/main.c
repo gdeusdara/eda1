@@ -74,12 +74,11 @@ void init_list(List *list)
         file_register.adress = (char *) malloc(sizeof(char *));
         file_register.birthday = (char *) malloc(sizeof(char *));
 
-        char *dolar = (char *) malloc(sizeof(char *));
         List *element = (List *) malloc(sizeof(List));
         element = list;
         element->previous = NULL;
         bool first_element = true;
-        while (fscanf(file, "%s\n%s\n%s\n%d\n%s\n$\n", file_register.name, file_register.tel, file_register.adress, &file_register.cep, file_register.birthday) != EOF)
+        while (fscanf(file, "%[^\n]%*c%[^\n]%*c%[^\n]%*c%d%*c%[^\n]%*c$\n", file_register.name, file_register.tel, file_register.adress, &file_register.cep, file_register.birthday) != EOF)
         {
             printf("NOME: %s\n", file_register.name );
             printf("TEL: %s\n", file_register.tel );
