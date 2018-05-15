@@ -43,12 +43,6 @@ int main ()
     else
     {
         init_list(list);
-
-        new_register(list);
-        printf("%s\n", list->next->info.name  );
-        new_register(list);
-        printf("%s\n", list->next->info.name);
-        new_register(list);
         show_all(list);
         return 0;
     }
@@ -64,8 +58,58 @@ void init_element(List *element, Contact new_register)
 
 void init_list(List *list)
 {
-  list->previous = NULL;
-  list->next = NULL;
+    FILE *file;
+
+    file = fopen(FILE_NAME, "r");
+    if (file == NULL)
+    {
+      printf("nao consegui LEr\n");
+      list->next = NULL;
+    } else
+    {
+
+
+        bool first_element = true;
+        while (!feof(file))
+        {
+            Contact file_register;
+            char *dolar = (char *) malloc(sizeof(char *));
+
+            file_register.name = (char *) malloc(sizeof(char *));
+            fscanf(file, "%[^\n]%*c", file_register.name);
+
+            file_register.tel = (char *) malloc(sizeof(char *));
+            fscanf(file, "%[^\n]%*c", file_register.tel);
+
+            file_register.adress = (char *) malloc(sizeof(char *));
+
+            fscanf(file, "%[^\n]%*c", file_register.adress);
+
+            fscanf(file, "%d%*c", &file_register.cep);
+
+            file_register.birthday = (char *) malloc(sizeof(char *));
+            fscanf(file, "%[^\n]%*c", file_register.birthday);
+            fgets(dolar, 3, file);
+
+            printf("NOME: %s\n", file_register.name );
+            printf("TEL: %s\n", file_register.tel );
+
+            List *element = (List *) malloc(sizeof(List));
+            List *next_element = (List *) malloc(sizeof(List));
+            if (first_element) {
+                init_element(element, file_register);
+                list->next = element;
+                first_element = false;
+            } else
+            {
+                next_element->info = file_register;
+                next_element->previous = element;
+                next_element->next = NULL;
+                element->next = next_element;
+                element = next_element;
+            }
+        }
+    }
 }
 
 void new_register(List *list)
@@ -96,7 +140,6 @@ void new_register(List *list)
     scanf("%[^\n]%*c", new_register.birthday);
 
     init_element(new, new_register);
-    printf("%s\n", new->info.name );
 
     if(list->next == NULL)
     {
@@ -137,11 +180,10 @@ void new_register(List *list)
         } while (!finish || element == NULL);
 
     }
-    printf("AGORA VOU GRAVAR NO ARQUIVO\n");
 
     file = fopen(FILE_NAME, "w");
     if (file == NULL)
-    exit(1);
+        exit(1);
 
     List *element = list->next;
     while (element != NULL)
