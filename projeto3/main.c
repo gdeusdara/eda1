@@ -67,47 +67,32 @@ void init_list(List *list)
       list->next = NULL;
     } else
     {
+        Contact file_register;
 
+        file_register.name = (char *) malloc(sizeof(char *));
+        file_register.tel = (char *) malloc(sizeof(char *));
+        file_register.adress = (char *) malloc(sizeof(char *));
+        file_register.birthday = (char *) malloc(sizeof(char *));
 
+        char *dolar = (char *) malloc(sizeof(char *));
+        List *element = (List *) malloc(sizeof(List));
+        element = list;
+        element->previous = NULL;
         bool first_element = true;
-        while (!feof(file))
+        while (fscanf(file, "%s\n%s\n%s\n%d\n%s\n$\n", file_register.name, file_register.tel, file_register.adress, &file_register.cep, file_register.birthday) != EOF)
         {
-            Contact file_register;
-            char *dolar = (char *) malloc(sizeof(char *));
-
-            file_register.name = (char *) malloc(sizeof(char *));
-            fscanf(file, "%[^\n]%*c", file_register.name);
-
-            file_register.tel = (char *) malloc(sizeof(char *));
-            fscanf(file, "%[^\n]%*c", file_register.tel);
-
-            file_register.adress = (char *) malloc(sizeof(char *));
-
-            fscanf(file, "%[^\n]%*c", file_register.adress);
-
-            fscanf(file, "%d%*c", &file_register.cep);
-
-            file_register.birthday = (char *) malloc(sizeof(char *));
-            fscanf(file, "%[^\n]%*c", file_register.birthday);
-            fgets(dolar, 3, file);
-
             printf("NOME: %s\n", file_register.name );
             printf("TEL: %s\n", file_register.tel );
+            printf("ADRESS: %s\n", file_register.adress );
+            printf("CEP: %d\n", file_register.cep );
+            printf("BIRTHDAY: %s\n\n", file_register.birthday );
 
-            List *element = (List *) malloc(sizeof(List));
-            List *next_element = (List *) malloc(sizeof(List));
-            if (first_element) {
-                init_element(element, file_register);
-                list->next = element;
-                first_element = false;
-            } else
-            {
-                next_element->info = file_register;
-                next_element->previous = element;
-                next_element->next = NULL;
-                element->next = next_element;
-                element = next_element;
-            }
+            List *new_element = (List *) malloc(sizeof(List));
+            new_element->info = file_register;
+            new_element->previous = element;
+            new_element->next = NULL;
+            element->next = new_element;
+            element = element->next;
         }
     }
 }
@@ -206,7 +191,7 @@ void show_all(List *list)
 
     List *element;
     element = list->next;
-    printf("Lista:\n");
+    printf("\nLILSTA:\n\n");
     while( element != NULL){
         printf("Nome: %s\nTelefone: %s\nEndereço: %s\nCEP: %d\nData de Nascimento: %s\n\n", element->info.name, element->info.tel, element->info.adress, element->info.cep, element->info.birthday);
         element = element->next;
