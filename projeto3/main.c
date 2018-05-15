@@ -25,6 +25,8 @@ typedef struct list
     struct list *next;
 } List;
 
+void free_element(List *element);
+void create_list(List *list, Contact new_register);
 void init_element(List *element, Contact new_register);
 void init_list(List *list);
 void new_register(List *list);
@@ -47,6 +49,29 @@ int main ()
         return 0;
     }
 }
+// =========== FUNCTIONS ==========
+
+void free_element(List *element)
+{
+    free(element->info.name);
+    free(element->info.tel);
+    free(element->info.adress);
+    free(element->info.birthday);
+    free(element->next);
+
+    element->previous->next = NULL;
+    free(element);
+
+}
+void create_list(List *list, Contact new_register)
+{
+  List *element = list->next;
+  while (element != NULL)
+  {
+      element = element->next;
+  }
+
+}
 
 void init_element(List *element, Contact new_register)
 {
@@ -67,32 +92,30 @@ void init_list(List *list)
       list->next = NULL;
     } else
     {
-        Contact file_register;
-
-        file_register.name = (char *) malloc(sizeof(char *));
-        file_register.tel = (char *) malloc(sizeof(char *));
-        file_register.adress = (char *) malloc(sizeof(char *));
-        file_register.birthday = (char *) malloc(sizeof(char *));
-
         List *element = (List *) malloc(sizeof(List));
         element = list;
         element->previous = NULL;
         bool first_element = true;
-        while (fscanf(file, "%[^\n]%*c%[^\n]%*c%[^\n]%*c%d%*c%[^\n]%*c$\n", file_register.name, file_register.tel, file_register.adress, &file_register.cep, file_register.birthday) != EOF)
-        {
-            printf("NOME: %s\n", file_register.name );
-            printf("TEL: %s\n", file_register.tel );
-            printf("ADRESS: %s\n", file_register.adress );
-            printf("CEP: %d\n", file_register.cep );
-            printf("BIRTHDAY: %s\n\n", file_register.birthday );
 
+        do{
             List *new_element = (List *) malloc(sizeof(List));
-            new_element->info = file_register;
+
+
+            new_element->info.name = (char *) malloc(sizeof(char *));
+            new_element->info.tel = (char *) malloc(sizeof(char *));
+            new_element->info.adress = (char *) malloc(sizeof(char *));
+            new_element->info.birthday = (char *) malloc(sizeof(char *));
+
+
+            element->next = new_element;
+
             new_element->previous = element;
             new_element->next = NULL;
-            element->next = new_element;
+
             element = element->next;
-        }
+        } while (fscanf(file, "%[^\n]%*c%[^\n]%*c%[^\n]%*c%d%*c%[^\n]%*c$\n", element->info.name, element->info.tel, element->info.adress, &element->info.cep, element->info.birthday) != EOF);
+
+        free_element(element);
     }
 }
 
