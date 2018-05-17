@@ -34,7 +34,7 @@ void remove_register(List * list);
 void show_register(List * list);
 void show_all(List *list);
 void save_to_file(List *list);
-
+bool is_valid(char *input, char *form);
 
 int main ()
 {
@@ -57,7 +57,7 @@ int main ()
         printf("\t\t\t[4] Lista de Registro\n");
         printf("\t\t\t[5] SAIR\n\n");
 
-        printf("\t\t\tDigite uma opção: ");
+        printf("\t\tDigite uma opção: ");
         scanf("%d", &option);
         printf("\n");
 
@@ -135,9 +135,9 @@ void init_list(List *list)
             List *new_element = (List *) malloc(sizeof(List));
 
 
-            new_element->info.name = (char *) malloc(sizeof(char *));
+            new_element->info.name = (char *) malloc(101 * sizeof(char));
             new_element->info.tel = (char *) malloc(sizeof(char *));
-            new_element->info.adress = (char *) malloc(sizeof(char *));
+            new_element->info.adress = (char *) malloc(101 * sizeof(char));
             new_element->info.birthday = (char *) malloc(sizeof(char *));
 
 
@@ -160,26 +160,32 @@ void new_register(List *list)
     FILE *file;
     List *new = (List *) malloc(sizeof(List));
 
-    new_register.name = (char *) malloc(sizeof(char *));
+    new_register.name = (char *) malloc(101 * sizeof(char));
     printf ("\t\tDigite o nome: ");
     scanf(" %[^\n]%*c", new_register.name);
 
+    do
+    {
+        new_register.tel = (char *) malloc(sizeof(char *));
+        printf("\t\tDigite o telefone: ");
+        scanf("%[^\n]%*c", new_register.tel);
+    } while(!is_valid(new_register.tel, "#####-####"));
 
-    new_register.tel = (char *) malloc(sizeof(char *));
-    printf("\t\tDigite o telefone: ");
-    scanf(" %[^\n]%*c", new_register.tel);
-
-    new_register.adress = (char *) malloc(sizeof(char *));
+    new_register.adress = (char *) malloc(101 * sizeof(char));
     printf("\t\tDigite o Endereço: ");
     scanf(" %[^\n]%*c", new_register.adress);
 
+    do
+    {
+        printf("\t\tDigite o CEP: ");
+        scanf("%d%*c", &new_register.cep);
+    } while(new_register.cep < 0);
 
-    printf("\t\tDigite o CEP: ");
-    scanf("%d%*c", &new_register.cep);
-
-    new_register.birthday = (char *) malloc(sizeof(char *));
-    printf("\t\tDigite a data de nascimento: ");
-    scanf("%[^\n]%*c", new_register.birthday);
+    do {
+        new_register.birthday = (char *) malloc(sizeof(char *));
+        printf("\t\tDigite a data de nascimento: ");
+        scanf("%[^\n]%*c", new_register.birthday);
+    } while(!is_valid(new_register.birthday, "##/##/####"));
 
     init_element(new, new_register);
 
@@ -189,7 +195,6 @@ void new_register(List *list)
     } else
     {
         List *element = list->next;
-        printf("%s\n", element->info.name);
 
         bool finish = false;
         do
@@ -223,7 +228,7 @@ void new_register(List *list)
 
     }
 
-
+    save_to_file(list);
 }
 
 void show_all(List *list)
@@ -315,4 +320,35 @@ void save_to_file(List *list)
 
   if(fclose(file))
     printf("\t\tErro ao fechar Arquivo\n");
+}
+
+bool is_valid(char *input, char *form)
+{
+     int i = 0;
+     if (strlen(input) != 10) {
+       printf("\n\t\tTamanho invalido! Siga este formato: %s\n\n", form);
+       return false;
+     }
+     while(i <= 10)
+     {
+        if(form[i] != '#')
+        {
+           if (input[i] != form[i])
+           {
+             printf("\n\t\tInput invalido! Siga este formato %c %c: %s\n\n",form[i], input[i], form);
+             return false;
+           }
+           i++;
+        }
+        else
+        {
+          if (!isdigit(input[i]))
+          {
+            printf("\n\t\tForma invalida! Siga este formato: %s\n\n", form);
+            return false;
+          }
+        }
+        i++;
+     }
+     return true;
 }
