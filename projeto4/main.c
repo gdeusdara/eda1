@@ -24,8 +24,9 @@ typedef struct fila {
 } Fila;
 
 void aproximacoes_decolagens(int NVoos, int *NAproximacoes, int *NDecolagens);
-Lista *novo_aviao();
+Lista *novo_aviao();                                                             //Heads
 Fila iniciar_avioes(int * NVoos, int *NAproximacoes, int *NDecolagens);
+
 
 int main() {
   srand(time(NULL));
@@ -63,6 +64,8 @@ int main() {
 
 //==========FUNCÔES============
 
+//FUNÇÃO 1
+//Inicialiaza o numero de aproximacoes e decolagens
 void aproximacoes_decolagens(int NVoos, int *NAproximacoes, int *NDecolagens){
   do {
     *NAproximacoes = rand()%33;
@@ -70,6 +73,16 @@ void aproximacoes_decolagens(int NVoos, int *NAproximacoes, int *NDecolagens){
   } while(*NAproximacoes < 10 || *NDecolagens < 10 || *NDecolagens > 32 || *NAproximacoes > NVoos);
 }
 
+
+//FUNÇÃO 2
+//Aloca um novo aviao para a fila
+Lista *novo_aviao(){
+  Lista *novo_aviao = (Lista *) malloc(sizeof(Lista));
+  return novo_aviao;
+}
+
+//FUNÇÃO 3
+//Inicializa a fila de aviões para começar a contagem do tempo
 Fila iniciar_avioes(int * NVoos, int *NAproximacoes, int *NDecolagens){
 
   do {
@@ -84,7 +97,7 @@ Fila iniciar_avioes(int * NVoos, int *NAproximacoes, int *NDecolagens){
 "AZ1010", "TG1506", "VG3002", "JJ4402", "GL7603", "RL7880", "AL0012",
 "TT4544", "TG1505", "VG3003", "JJ4403", "JJ4401", "LN7002", "AZ1002",
 "AZ1007", "GL7604", "AZ1006", "TG1503", "AZ1003", "JJ4403", "AZ1001",
-"LN7003", "AZ1004", "TG1504", "AZ1005", "TG1502", "GL7601",
+"LN7003", "AZ1004", "TG1504", "AZ1005", "TG1502", "GL7601",                                 //Códigos dados
 "TT4500", "RL7801", "JJ4410", "GL7607", "AL0029", "VV3390", "VV3392",
 "GF4681", "GF4690", "AZ1020", "JJ4435", "VG3010", "LF0920", "AZ1065",
 "LF0978", "RL7867", "TT4502", "GL7645", "LF0932", "JJ4434", "TG1510",
@@ -92,19 +105,18 @@ Fila iniciar_avioes(int * NVoos, int *NAproximacoes, int *NDecolagens){
 
   int *random = (int *) malloc((*NVoos) * sizeof(int));
 
-  bool primeiro_aviao = true;
   int status, contagem_decolagem = 0, contagem_aproximacao = 0;
 
   Fila voos;
   voos.inicio = (Lista *) malloc(sizeof(Lista));    //Para criar o primeiro elemento, o inicio e o fim apontarão para a mesma struct Lista
   voos.fim = voos.inicio;
 
-  for (size_t i = 0; i < *NVoos; i++) {   //Iniciando Lista de avioes
+  for (size_t i = 0; i < *NVoos; i++) {   //Iniciando Fila de avioes
 
-    do{                                       //Deixando os codigos aleatórios sem repetir
+    do{
       random[i] = rand()%64;
       for (size_t j = 0; j < i; j++) {
-        if (random[j] == random[i]) {
+        if (random[j] == random[i]) {         //Deixando os codigos aleatórios sem repetir
           random[i] = -1;
         }
       }
@@ -115,7 +127,7 @@ Fila iniciar_avioes(int * NVoos, int *NAproximacoes, int *NDecolagens){
       voos.fim = voos.fim->prox;          //Se não, será alocado um novo avião e o fim apontará para ele
     }
 
-    strcpy(voos.fim->info.codigo,codigos[random[i]]);   //Colocando informações no aviao
+    strcpy(voos.fim->info.codigo,codigos[random[i]]);   //Colocando código no avião
 
     status = rand()%2;
     if (status == DECOLAGEM && contagem_decolagem < *NDecolagens) {
@@ -123,8 +135,8 @@ Fila iniciar_avioes(int * NVoos, int *NAproximacoes, int *NDecolagens){
         contagem_decolagem++;
     }
     else{
-      if (contagem_aproximacao < *NAproximacoes) {
-        voos.fim->info.status = 'A';
+      if (contagem_aproximacao < *NAproximacoes) {             //Deixando aleatório as aproximacoes e decolagens
+        voos.fim->info.status = 'A';                           //De acordo com a quandide de cada uma
         voos.fim->info.prioridade = rand()%13;
         contagem_aproximacao++;
       }
@@ -137,9 +149,4 @@ Fila iniciar_avioes(int * NVoos, int *NAproximacoes, int *NDecolagens){
   }
 
   return voos;
-}
-
-Lista *novo_aviao(){
-  Lista *novo_aviao = (Lista *) malloc(sizeof(Lista));
-  return novo_aviao;
 }
