@@ -26,6 +26,8 @@ typedef struct fila {
 void aproximacoes_decolagens(int NVoos, int *NAproximacoes, int *NDecolagens);
 Lista *novo_aviao();                                                             //Heads
 Fila iniciar_avioes(int * NVoos, int *NAproximacoes, int *NDecolagens);
+int verifica_emergencia(Fila voos);
+void simular(Fila voos);
 
 
 int main() {
@@ -149,4 +151,61 @@ Fila iniciar_avioes(int * NVoos, int *NAproximacoes, int *NDecolagens){
   }
 
   return voos;
+}
+
+//FUNÇÃO 4
+//Verifica se não tem alguma prioridade 0 e, caso tenha, passa para o inicio da fila
+//Verifica se tem 3 ou mais com prioridade 0.
+int verifica_emergencia(Fila voos){
+    Lista *voo = voos.inicio->prox;
+    Lista *voo_anterior = voos.inicio;
+    int emergencia = 0;
+
+    while (voo != NULL) {
+      if (voo->info.status == 'A') {
+        if (voo->info.prioridade == 0) {
+          voo_anterior->prox = voo->prox;
+          voo->prox = voos.inicio;
+          voos.inicio = voo;
+        }
+      }
+      voo_anterior = voo;
+      voo = voo->prox;
+    }
+
+    //Agora vamos verificar se há emergencia
+    voo = voos.inicio->prox->prox;    //colocando ponteiro para o terceiro da fila
+
+    if (voo->info.prioridade == 0) {      //verificando se o terceiro da fila é 0
+      if (voo->prox->info.prioridade == 0)
+        emergencia = 2;
+      else                                //Se só o terceiro for 0, ele apenas abre a pista apenas de decolagem,
+        emergencia = 1;                   //Se se o quarto também for 0, ele avisará que algum/alguns avião(ões) irá(ão) cair;
+    }
+    return emergencia;
+}
+
+//faz a simulação do aeroporto
+//FUNÇÃO PRINCIPAL
+void simular(Fila voos){
+  int tempo = 0;
+  int emergencia;
+
+  while (voos.inicio != NULL) {
+    emergencia = verifica_emergencia(voos);
+    if (voos.inicio->info.status == 'D' || emergencia) {      //Se for solicitação para decolagem ou uma emergencia, ele poderá pedir para as 3 pistas
+      if (emergencia == 2) {                //Se for igual a 2, nao tem pistas suficientes para pouso, um ou mais aviôes cairão
+        Lista *queda = voos.inicio->prox->prox->prox;
+        Lista *anterior = voos.inicio->prox->prox;
+
+        while (queda != NULL && queda->info.prioridade == 0) {
+          anterior->prox = queda->prox;
+          free(queda);
+          anterior = anterior->prox;
+          queda = anterior->prox;
+          printf("\n\nALERTA CRÍTICO, AERONAVE IRÁ CAIR\n\n");
+        }
+      }
+    }
+  }
 }
