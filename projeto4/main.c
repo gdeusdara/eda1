@@ -26,8 +26,11 @@ typedef struct fila {
 void aproximacoes_decolagens(int NVoos, int *NAproximacoes, int *NDecolagens);
 Lista *novo_aviao();                                                             //Heads
 Fila iniciar_avioes(int * NVoos, int *NAproximacoes, int *NDecolagens);
-int verifica_emergencia(Fila voos);
-void simular(Fila voos);
+bool verifica_emergencia(Fila *voos);
+void diminui_tanque(Fila *voos);
+void simular(Fila *voos);
+void pedido_aceito(Fila *voos, int tempo, int pista);
+void aviao_cai(Fila *voos);
 
 
 int main() {
@@ -55,11 +58,7 @@ int main() {
     avioes = avioes->prox;
 
   }
-  printf("\n\nULTIMO:\n\n");
-  printf("Código: %s  status: %c", voos.fim->info.codigo, voos.fim->info.status);
-  if (voos.fim->info.status == 'A') {
-    printf(" prioridade: %d", voos.fim->info.prioridade);
-  }
+  simular(&voos);
   printf("\n");
   return 0;
 }
@@ -156,17 +155,17 @@ Fila iniciar_avioes(int * NVoos, int *NAproximacoes, int *NDecolagens){
 //FUNÇÃO 4
 //Verifica se não tem alguma prioridade 0 e, caso tenha, passa para o inicio da fila
 //Verifica se tem 3 ou mais com prioridade 0.
-int verifica_emergencia(Fila voos){
-    Lista *voo = voos.inicio->prox;
-    Lista *voo_anterior = voos.inicio;
-    int emergencia = 0;
+bool verifica_emergencia(Fila *voos){
+    Lista *voo = voos->inicio->prox;
+    Lista *voo_anterior = voos->inicio;
+    int emergencia = false;
 
     while (voo != NULL) {
       if (voo->info.status == 'A') {
         if (voo->info.prioridade == 0) {
           voo_anterior->prox = voo->prox;
-          voo->prox = voos.inicio;
-          voos.inicio = voo;
+          voo->prox = voos->inicio;
+          voos->inicio = voo;
         }
       }
       voo_anterior = voo;
@@ -174,38 +173,117 @@ int verifica_emergencia(Fila voos){
     }
 
     //Agora vamos verificar se há emergencia
-    voo = voos.inicio->prox->prox;    //colocando ponteiro para o terceiro da fila
+    voo = voos->inicio->prox->prox;    //colocando ponteiro para o terceiro da fila
 
     if (voo->info.prioridade == 0) {      //verificando se o terceiro da fila é 0
-      if (voo->prox->info.prioridade == 0)
-        emergencia = 2;
-      else                                //Se só o terceiro for 0, ele apenas abre a pista apenas de decolagem,
-        emergencia = 1;                   //Se se o quarto também for 0, ele avisará que algum/alguns avião(ões) irá(ão) cair;
+        emergencia = true;
+        printf("ALERTA GERAL DE DESVIO DE AERONAVE\n");                //Se só o terceiro for 0, ele apenas abre a pista apenas de decolagem,                   //Se se o quarto também for 0, ele avisará que algum/alguns avião(ões) irá(ão) cair;
     }
     return emergencia;
 }
 
 //faz a simulação do aeroporto
 //FUNÇÃO PRINCIPAL
-void simular(Fila voos){
+void simular(Fila *voos){
   int tempo = 0;
-  int emergencia;
+  bool emergencia;
+  bool pista1 = true, pista2 = true, pista3 = true;
+  int tempo1, tempo2, tempo3;
 
-  while (voos.inicio != NULL) {
-    emergencia = verifica_emergencia(voos);
-    if (voos.inicio->info.status == 'D' || emergencia) {      //Se for solicitação para decolagem ou uma emergencia, ele poderá pedir para as 3 pistas
-      if (emergencia == 2) {                //Se for igual a 2, nao tem pistas suficientes para pouso, um ou mais aviôes cairão
-        Lista *queda = voos.inicio->prox->prox->prox;
-        Lista *anterior = voos.inicio->prox->prox;
+  while (voos->inicio != NULL) {    //iniciando simulação
 
-        while (queda != NULL && queda->info.prioridade == 0) {
-          anterior->prox = queda->prox;
-          free(queda);
-          anterior = anterior->prox;
-          queda = anterior->prox;
-          printf("\n\nALERTA CRÍTICO, AERONAVE IRÁ CAIR\n\n");
-        }
+    emergencia = verifica_emergencia(voos);     //Coloca as prioridades 0 na frente e avisa se tem emergencia
+
+    //Se qualquer pista estiver liberada, ele entrará no if da pista para o pedido ser aceito;
+    if (pista1) {
+      if (voos->inicio->info.status == 'D')
+        tempo1 = 2*UNTEMPO;
+      else
+        tempo1 = 3*UNTEMPO;
+      pedido_aceito(voos, tempo, 1 );
+      pista1 = false;                                          //Se for solicitação para decolagem, ele poderá pedir para as 3 pistas
+    }
+
+    if (pista2) {
+      if (voos->inicio->info.status == 'D')
+        tempo2 = 2*UNTEMPO;
+      else
+        tempo2 = 3*UNTEMPO;
+      pedido_aceito(voos, tempo, 2 );
+      pista2 = false;
+    }
+    if (!pista3 && emergencia) {
+      aviao_cai(voos);
+    }
+
+    if (pista3) {
+      if (emergencia){      //a pista 3 abre para pouso em caso de emergencia
+        tempo3 = 3*UNTEMPO;
+        pedido_aceito(voos, tempo, 3);
+        pista3 = false;
+        emergencia = false;
+      }
+      else if (voos->inicio->info.status == 'D'){
+        tempo3 = 2*UNTEMPO;
+        pedido_aceito(voos, tempo, 3);
+        pista3 = false;
       }
     }
+
+    //Esses próximos if fazem a contagem do tempo em cada pista e, quando a pista liberar, ela se torna true
+    if (!pista1) {
+      tempo1 -= UNTEMPO;
+      if (!tempo1) {
+        pista1 = true;
+      }
+    }
+    if (!pista2) {
+      tempo2 -= UNTEMPO;
+      if (!tempo2) {
+        pista2 = true;
+      }
+    }
+    if (!pista3) {
+      tempo3 -= UNTEMPO;
+      if (!tempo3) {
+        pista3 = true;
+      }
+    }
+
+    //Esse if é para diminuir o tanque de tds os avioes a cada 10*UNTEMPO
+    if (tempo%(10*UNTEMPO) == 0) {
+      diminui_tanque(voos);
+    }
+
+    //tempo passa de 5 em 5 minutos a cada loop
+    tempo += UNTEMPO;
   }
+}
+
+void pedido_aceito(Fila *voos, int tempo, int pista){
+  Lista *pedido = voos->inicio;
+  voos->inicio = voos->inicio->prox;
+
+  printf("Código de Voo: %s\n", pedido->info.codigo);
+  printf("Status: %s", pedido->info.status == 'D' ? "aeronave decolou" : "aeronave pousou");
+  printf("\nHorário do início do procedimento: %d\n", tempo);
+  printf("Número da pista: %d\n", pista);
+  printf("\n");
+
+  free(pedido);
+}
+
+void diminui_tanque(Fila *voos){
+  Lista *tanque = voos->inicio;
+
+  while (tanque != NULL) {
+    tanque->info.prioridade--;
+    tanque = tanque->prox;
+  }
+}
+
+void aviao_cai(Fila *voos){
+  Lista *queda = voos->inicio;
+  voos->inicio = voos->inicio->prox;
+  free(queda);
 }
