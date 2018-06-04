@@ -179,7 +179,7 @@ void simular(Fila *voos, int *horas, int *minutos){
       if (voos->inicio->info.status == 'D')
         tempo1 = 2*UNTEMPO;
       else
-        tempo1 = 3*UNTEMPO;
+        tempo1 = 4*UNTEMPO;   //tempo de aproximação + tempo de pouso
       pedido_aceito(voos, *horas, *minutos, 1 );
       pista1 = false;                                          //Se for solicitação para decolagem, ele poderá pedir para as 3 pistas
     }
@@ -188,14 +188,14 @@ void simular(Fila *voos, int *horas, int *minutos){
       if (voos->inicio->info.status == 'D')
         tempo2 = 2*UNTEMPO;
       else
-        tempo2 = 3*UNTEMPO;
+        tempo2 = 4*UNTEMPO;
       pedido_aceito(voos, *horas, *minutos, 2 );
       pista2 = false;
     }
 
     if (pista3 && voos->inicio != NULL) {
       if (emergencia){      //a pista 3 abre para pouso em caso de emergencia
-        tempo3 = 3*UNTEMPO;
+        tempo3 = 4*UNTEMPO;
         pedido_aceito(voos, *horas, *minutos, 3);
         pista3 = false;
         emergencia = false;
@@ -227,6 +227,7 @@ void simular(Fila *voos, int *horas, int *minutos){
       }
     }
 
+    tempo_tanque += UNTEMPO;
     //Esse if é para diminuir o tanque de tds os avioes a cada 10*UNTEMPO
     if (tempo_tanque%(10*UNTEMPO) == 0 && tempo_tanque != 0) {
       printf("\nDIMINUI TANQUE\n\n");
@@ -235,10 +236,10 @@ void simular(Fila *voos, int *horas, int *minutos){
       tempo_tanque = 0;
     }
 
-    emergencia = verifica_emergencia(voos);     //Coloca as prioridades 0 na frente e avisa se tem emergencia
     //tempo passa de 5 em 5 minutos a cada loop
     passa_tempo(horas, minutos);
-    tempo_tanque += UNTEMPO;
+
+    emergencia = verifica_emergencia(voos);     //Coloca as prioridades 0 na frente e avisa se tem emergencia
   }
 }
 
@@ -306,7 +307,7 @@ void organiza_prioridade(Fila *voos){
 
 
 void horas_aleatorias(int *horas, int *minutos){
-  *horas = rand()%25;
+  *horas = rand()%24;
   do {
     *minutos = rand()%56;
   } while((*minutos)%5 != 0);
@@ -316,7 +317,7 @@ void passa_tempo(int *horas, int *minutos) {
   *minutos += UNTEMPO;
   if (*minutos == 60 ) {
     *minutos = 0;
-    if (*horas != 24)
+    if (*horas != 23)
       (*horas)++;
     else
       *horas = 0;
