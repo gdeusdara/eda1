@@ -23,6 +23,7 @@ typedef struct fila {
   Lista* fim;
 } Fila;
 
+void organiza_prioridade(Fila *voos);
 void aproximacoes_decolagens(int NVoos, int *NAproximacoes, int *NDecolagens);
 Lista *novo_aviao();                                                             //Heads
 Fila iniciar_avioes(int * NVoos, int *NAproximacoes, int *NDecolagens);
@@ -30,7 +31,7 @@ bool verifica_emergencia(Fila *voos);
 void diminui_tanque(Fila *voos);
 void simular(Fila *voos);
 void pedido_aceito(Fila *voos, int tempo, int pista);
-void aviao_cai(Fila *voos);
+void aviao_cai(Lista *queda, Lista *anterior);
 
 
 int main() {
@@ -58,6 +59,7 @@ int main() {
     avioes = avioes->prox;
 
   }
+  printf("\n\n");
   simular(&voos);
   printf("\n");
   return 0;
@@ -157,34 +159,17 @@ Fila iniciar_avioes(int * NVoos, int *NAproximacoes, int *NDecolagens){
 //Verifica se tem 3 ou mais com prioridade 0.
 bool verifica_emergencia(Fila *voos){
   int emergencia = false;
-  if (voos->inicio != NULL) {
-      /* code */
-    Lista *voo = voos->inicio->prox;
-    Lista *voo_anterior = voos->inicio;
-    while (voo != NULL && voo_anterior != NULL) {
-      if (voo->info.status == 'A') {
-        if (voo->info.prioridade == 0) {
-          voo_anterior->prox = voo->prox;
-          voo->prox = voos->inicio;
-          voos->inicio = voo;
-        }
-      }
-      voo_anterior = voo_anterior->prox;
-      if (voo_anterior != NULL) {
-        voo = voo_anterior->prox;
-      }
-    }
     //Agora vamos verificar se há emergencia
-    if (voos->inicio->prox != NULL)
-      if (voos->inicio->prox->prox != NULL) {
-        voo = voos->inicio->prox->prox;    //colocando ponteiro para o terceiro da fila
-        if (voo->info.prioridade == 0) {      //verificando se o terceiro da fila é 0
-            emergencia = true;
-            printf("ALERTA GERAL DE DESVIO DE AERONAVE\n");                //Se só o terceiro for 0, ele apenas abre a pista apenas de decolagem,                   //Se se o quarto também for 0, ele avisará que algum/alguns avião(ões) irá(ão) cair;
+    if (voos->inicio)
+      if (voos->inicio->prox != NULL)
+        if (voos->inicio->prox->prox != NULL) {
+          Lista *voo = voos->inicio->prox->prox;    //colocando ponteiro para o terceiro da fila
+          if (voo->info.status == 'A' && voo->info.prioridade == 0) {      //verificando se o terceiro da fila é 0
+              emergencia = true;
+              printf("ALERTA GERAL DE DESVIO DE AERONAVE\n\n");                //Se só o terceiro for 0, ele apenas abre a pista apenas de decolagem,                   //Se se o quarto também for 0, ele avisará que algum/alguns avião(ões) irá(ão) cair;
+          }
         }
-      }
-    }
-    return emergencia;
+  return emergencia;
 }
 
 //faz a simulação do aeroporto
@@ -194,10 +179,11 @@ void simular(Fila *voos){
   bool emergencia;
   bool pista1 = true, pista2 = true, pista3 = true;
   int tempo1, tempo2, tempo3;
+
+  organiza_prioridade(voos);
+  emergencia = verifica_emergencia(voos);     //Coloca as prioridades 0 na frente e avisa se tem emergencia
+
   while (voos->inicio != NULL) {    //iniciando simulação
-    if (!tempo) {
-      emergencia = verifica_emergencia(voos);     //Coloca as prioridades 0 na frente e avisa se tem emergencia
-    }
 
     //Se qualquer pista estiver liberada, ele entrará no if da pista para o pedido ser aceito;
     if (pista1) {
@@ -216,9 +202,6 @@ void simular(Fila *voos){
         tempo2 = 3*UNTEMPO;
       pedido_aceito(voos, tempo, 2 );
       pista2 = false;
-    }
-    if (!pista3 && emergencia) {
-      aviao_cai(voos);
     }
 
     if (pista3 && voos->inicio != NULL) {
@@ -257,12 +240,12 @@ void simular(Fila *voos){
 
     //Esse if é para diminuir o tanque de tds os avioes a cada 10*UNTEMPO
     if (tempo%(10*UNTEMPO) == 0 && tempo != 0) {
-      printf("DIMINUI TANQUE\n");
+      printf("\nDIMINUI TANQUE\n\n");
       diminui_tanque(voos);
-      printf("Antes de entrar o EMERGENCIA\n");
-      emergencia = verifica_emergencia(voos);     //Coloca as prioridades 0 na frente e avisa se tem emergencia
+      organiza_prioridade(voos);
     }
 
+    emergencia = verifica_emergencia(voos);     //Coloca as prioridades 0 na frente e avisa se tem emergencia
     //tempo passa de 5 em 5 minutos a cada loop
     tempo += UNTEMPO;
   }
@@ -283,16 +266,44 @@ void pedido_aceito(Fila *voos, int tempo, int pista){
 
 void diminui_tanque(Fila *voos){
   Lista *tanque = voos->inicio;
+  Lista *anterior = voos->inicio;
 
   while (tanque != NULL) {
-    tanque->info.prioridade--;
+    if (tanque->info.status == 'A') {
+      tanque->info.prioridade--;
+      if (tanque->info.prioridade == -1)
+        aviao_cai(tanque, anterior);
+    }
+
+    anterior = tanque;
     tanque = tanque->prox;
   }
 }
 
-void aviao_cai(Fila *voos){
-  Lista *queda = voos->inicio;
-  voos->inicio = voos->inicio->prox;
+void aviao_cai(Lista *queda, Lista *anterior){
+  if (queda != anterior)
+    anterior->prox = queda->prox;
   free(queda);
-  printf("ALERTA CRÍTICO, AERONAVE IRÁ CAIR\n");
+  printf("\nALERTA CRÍTICO, AERONAVE IRÁ CAIR\n\n");
+}
+
+void organiza_prioridade(Fila *voos){
+  if (voos->inicio != NULL) {
+    Lista *voo = voos->inicio->prox;
+    Lista *voo_anterior = voos->inicio;
+
+    while (voo != NULL && voo_anterior != NULL) {
+      if (voo->info.status == 'A') {
+        if (voo->info.prioridade == 0) {
+          voo_anterior->prox = voo->prox;
+          voo->prox = voos->inicio;
+          voos->inicio = voo;
+        }
+      }
+      voo_anterior = voo_anterior->prox;
+      if (voo_anterior != NULL) {
+        voo = voo_anterior->prox;
+      }
+    }
+  }
 }
