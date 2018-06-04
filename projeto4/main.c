@@ -23,14 +23,17 @@ typedef struct fila {
   Lista* fim;
 } Fila;
 
+void passa_tempo(int *horas, int *minutos);
+void mostra_dados_iniciais(Fila voos, int NVoos, int NAproximacoes, int NDecolagens, int horas, int minutos);
+void horas_aleatorias(int *horas, int *minutos);
 void organiza_prioridade(Fila *voos);
 void aproximacoes_decolagens(int NVoos, int *NAproximacoes, int *NDecolagens);
-Lista *novo_aviao();                                                             //Heads
-Fila iniciar_avioes(int * NVoos, int *NAproximacoes, int *NDecolagens);
+Lista *novo_aviao();                                                                                 //Heads
+Fila iniciar_avioes(int * NVoos, int *NAproximacoes, int *NDecolagens, int *horas, int *minutos);
 bool verifica_emergencia(Fila *voos);
 void diminui_tanque(Fila *voos);
-void simular(Fila *voos);
-void pedido_aceito(Fila *voos, int tempo, int pista);
+void simular(Fila *voos, int *horas, int *minutos);
+void pedido_aceito(Fila *voos, int horas, int minutos, int pista);
 void aviao_cai(Lista *queda, Lista *anterior);
 
 
@@ -39,28 +42,12 @@ int main() {
   int NVoos;
   int NAproximacoes;
   int NDecolagens;
+  int horas, minutos;
+
   Fila voos;
 
-  voos = iniciar_avioes( &NVoos, &NAproximacoes, &NDecolagens);
-  printf("NVoos: %d\n", NVoos );
-  printf("NAproximacoes: %d\n", NAproximacoes);
-  printf("NDecolagens: %d\n", NDecolagens);
-
-  Lista *avioes = voos.inicio;
-
-  printf("Lista:\n");
-  while (avioes != NULL) {
-
-    printf("Código de Voo: %s - %c", avioes->info.codigo, avioes->info.status);
-    if (avioes->info.status == 'A') {
-      printf(" - prioridade: %d", avioes->info.prioridade);
-    }
-    printf("\n");
-    avioes = avioes->prox;
-
-  }
-  printf("\n\n");
-  simular(&voos);
+  voos = iniciar_avioes( &NVoos, &NAproximacoes, &NDecolagens, &horas, &minutos);
+  simular(&voos, &horas, &minutos);
   printf("\n");
   return 0;
 }
@@ -86,7 +73,7 @@ Lista *novo_aviao(){
 
 //FUNÇÃO 3
 //Inicializa a fila de aviões para começar a contagem do tempo
-Fila iniciar_avioes(int * NVoos, int *NAproximacoes, int *NDecolagens){
+Fila iniciar_avioes(int * NVoos, int *NAproximacoes, int *NDecolagens, int *horas, int *minutos){
 
   do {
     *NVoos = rand()%65;
@@ -150,6 +137,8 @@ Fila iniciar_avioes(int * NVoos, int *NAproximacoes, int *NDecolagens){
     }
     voos.fim->prox = NULL;
   }
+  horas_aleatorias(horas, minutos);
+  mostra_dados_iniciais(voos, *NVoos, *NAproximacoes, *NDecolagens, *horas, *minutos);
 
   return voos;
 }
@@ -174,11 +163,11 @@ bool verifica_emergencia(Fila *voos){
 
 //faz a simulação do aeroporto
 //FUNÇÃO PRINCIPAL
-void simular(Fila *voos){
-  int tempo = 0;
+void simular(Fila *voos, int *horas, int *minutos){
   bool emergencia;
   bool pista1 = true, pista2 = true, pista3 = true;
   int tempo1, tempo2, tempo3;
+  int tempo_tanque = 0;
 
   organiza_prioridade(voos);
   emergencia = verifica_emergencia(voos);     //Coloca as prioridades 0 na frente e avisa se tem emergencia
@@ -191,7 +180,7 @@ void simular(Fila *voos){
         tempo1 = 2*UNTEMPO;
       else
         tempo1 = 3*UNTEMPO;
-      pedido_aceito(voos, tempo, 1 );
+      pedido_aceito(voos, *horas, *minutos, 1 );
       pista1 = false;                                          //Se for solicitação para decolagem, ele poderá pedir para as 3 pistas
     }
 
@@ -200,20 +189,20 @@ void simular(Fila *voos){
         tempo2 = 2*UNTEMPO;
       else
         tempo2 = 3*UNTEMPO;
-      pedido_aceito(voos, tempo, 2 );
+      pedido_aceito(voos, *horas, *minutos, 2 );
       pista2 = false;
     }
 
     if (pista3 && voos->inicio != NULL) {
       if (emergencia){      //a pista 3 abre para pouso em caso de emergencia
         tempo3 = 3*UNTEMPO;
-        pedido_aceito(voos, tempo, 3);
+        pedido_aceito(voos, *horas, *minutos, 3);
         pista3 = false;
         emergencia = false;
       }
       else if (voos->inicio->info.status == 'D'){
         tempo3 = 2*UNTEMPO;
-        pedido_aceito(voos, tempo, 3);
+        pedido_aceito(voos, *horas, *minutos, 3);
         pista3 = false;
       }
     }
@@ -239,25 +228,27 @@ void simular(Fila *voos){
     }
 
     //Esse if é para diminuir o tanque de tds os avioes a cada 10*UNTEMPO
-    if (tempo%(10*UNTEMPO) == 0 && tempo != 0) {
+    if (tempo_tanque%(10*UNTEMPO) == 0 && tempo_tanque != 0) {
       printf("\nDIMINUI TANQUE\n\n");
       diminui_tanque(voos);
       organiza_prioridade(voos);
+      tempo_tanque = 0;
     }
 
     emergencia = verifica_emergencia(voos);     //Coloca as prioridades 0 na frente e avisa se tem emergencia
     //tempo passa de 5 em 5 minutos a cada loop
-    tempo += UNTEMPO;
+    passa_tempo(horas, minutos);
+    tempo_tanque += UNTEMPO;
   }
 }
 
-void pedido_aceito(Fila *voos, int tempo, int pista){
+void pedido_aceito(Fila *voos, int horas, int minutos, int pista){
   Lista *pedido = voos->inicio;
   voos->inicio = voos->inicio->prox;
 
   printf("Código de Voo: %s\n", pedido->info.codigo);
   printf("Status: %s", pedido->info.status == 'D' ? "aeronave decolou" : "aeronave pousou");
-  printf("\nHorário do início do procedimento: %d\n", tempo);
+  printf("\nHorário do início do procedimento: %.2d:%.2d\n", horas, minutos);
   printf("Número da pista: %d\n", pista);
   printf("\n");
 
@@ -298,12 +289,59 @@ void organiza_prioridade(Fila *voos){
           voo_anterior->prox = voo->prox;
           voo->prox = voos->inicio;
           voos->inicio = voo;
+          voo = voo_anterior->prox;
+        }
+        else{
+          voo_anterior = voo;
+          voo = voo->prox;
         }
       }
-      voo_anterior = voo_anterior->prox;
-      if (voo_anterior != NULL) {
-        voo = voo_anterior->prox;
+      else{
+        voo_anterior = voo;
+        voo = voo->prox;
       }
     }
   }
+}
+
+
+void horas_aleatorias(int *horas, int *minutos){
+  *horas = rand()%25;
+  do {
+    *minutos = rand()%56;
+  } while((*minutos)%5 != 0);
+}
+
+void passa_tempo(int *horas, int *minutos) {
+  *minutos += UNTEMPO;
+  if (*minutos == 60 ) {
+    *minutos = 0;
+    if (*horas != 24)
+      (*horas)++;
+    else
+      *horas = 0;
+  }
+}
+
+void mostra_dados_iniciais(Fila voos, int NVoos, int NAproximacoes, int NDecolagens, int horas, int minutos){
+  Lista *avioes = voos.inicio;
+
+  printf("Aeroporto Internacional de Brasília\n");
+  printf("Hora inicial: %.2d:%.2d\n", horas, minutos);
+  printf("Lista de Pedidos: [\n");
+  while (avioes != NULL) {
+
+    printf("Código de Voo: %s - %c", avioes->info.codigo, avioes->info.status);
+    if (avioes->info.status == 'A') {
+      printf(" - prioridade: %d", avioes->info.prioridade);
+    }
+    printf("\n");
+    avioes = avioes->prox;
+
+  }
+
+  printf("]\n\nNVoos: %d\n", NVoos );
+  printf("NAproximacoes: %d\n", NAproximacoes);
+  printf("NDecolagens: %d\n", NDecolagens);
+  printf("\n\n");
 }
